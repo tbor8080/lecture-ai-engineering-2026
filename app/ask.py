@@ -58,7 +58,7 @@ def main() -> None:
 		while True:
 				try:
 						# テキスト整形
-						raw_input = input("質問を入力してください。")
+						raw_input = input("[⚫︎質問を入力してください] > ")
 						# 簡易入力チェック
 
 						if raw_input.lower() == "quit":
@@ -68,11 +68,12 @@ def main() -> None:
 								print("空の質問です。何か入力を行なってください。")
 								raw_input = DEFAULT_QUESTION
 								# continue
-						print(f"[質問内容] :{raw_input}\n")
-						input_question = f"以下の質問に100文字程度で答えてください。\n[質問] :{raw_input}"
+						raw_input = f"[質問] :{raw_input}"
+						print(f"{raw_input}\n")
+						input_question = f"以下の質問に100文字程度で答えてください。\n{raw_input}"
 						# 質問の履歴をまとめて送信することで、過去の質問を踏まえた回答が得られる。token数が増えるので、プロンプトに解答の制約を追記。
-						history_tmp = [f"[質問]: {q}\n[回答]: {a}" for q, a in histories]
-						history_tmp.append(f"[質問]: {input_question}")
+						history_tmp = [f" {q}\n{a}" for q, a, _, _, _ in histories]
+						history_tmp.append(input_question)
 						input_question = "\n".join(history_tmp)
 						# 計測開始
 						start = time.time()
@@ -82,36 +83,41 @@ def main() -> None:
 						# 計測終了
 						# 出力
 						# 応答時間表示
-						ask_time_view(start, end)
-						# 返答・過去の質問・token数表示
-						result_view(result, histories, input_tokens, output_tokens)
+						elapsed_time = ask_time_view(start, end)
 						# 最新の質問に対する回答を更新
-						# 
-						histories.append((input_question, result))
+						# result = f"[回答] :{result}"
+						result_tmp = f"[回答] :{result}"
+						histories.append((raw_input, result_tmp, input_tokens, output_tokens, elapsed_time))
 						# 履歴はmax_historiesで管理
 						if len(histories) > max_histories:
 								# 質問の履歴を{max_questions}件までに制限
 								histories.pop(0)
+						# 返答・過去の質問・token数表示
+						result_view(result, histories, input_tokens, output_tokens)
 						# 区切り
-						print("-" * 50)
+						print("次の質問を入力してください。")
 				except errors.APIError as e:
 						print(api_error_message(e.code, e.message))
 						raise SystemExit(1)
 
 # 返答表示：課題2
 def result_view(result:str, histories:list, input_tokens:int, output_tokens:int)->None:
-		print(f"[回答] {result}")
+		border_length = 64
+		print(result)
 		print(f"[トークン使用量] {input_tokens} (入力), {output_tokens} (出力)")
-		print("*"*50)
 		# 履歴
 		for i in range(len(histories)):
-				print("-" * 256)
-				print(f"[質問の履歴] \n{histories[i][0]} \n\n {histories[i][1]}")
-		print("*" * 50)
+				print("-" * border_length)
+				print(f"[履歴({i+1})|TIME:{histories[i][4]:.2f} sec. | TOKEN > Q:{histories[i][2]} Token / A:{histories[i][3]} Token]\n{histories[i][0]}\n{histories[i][1]}\n{i+1}はここまで\n")
+		print("*" * border_length)
 # 応答時間表示(sec)：課題3
 def ask_time_view(start:float, end:float)->None:
+		border_length = 64
 		t = end - start
+		print("="*border_length)
 		print(f"\n[応答時間] : {t:.2f} sec.")
+		print("="*border_length)
+		return t
 
 if __name__ == "__main__":
 		main()

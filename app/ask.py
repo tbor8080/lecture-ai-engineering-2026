@@ -20,7 +20,7 @@ from app.config import MODEL, TEMPERATURE, api_error_message, get_api_key
 
 # 応答時間計測のため、time
 import time
-# 
+# temperatureの反映
 from google.genai import types
 
 # 講座に固有の質問。正しい答えは data/glossary.json の homework-levels にある

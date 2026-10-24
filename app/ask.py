@@ -15,10 +15,13 @@ import argparse
 from google import genai
 from google.genai import errors
 
-from app.config import MODEL, api_error_message, get_api_key
+# from app.config import MODEL, api_error_message, get_api_key
+from app.config import MODEL, TEMPERATURE, api_error_message, get_api_key
 
 # 応答時間計測のため、time
 import time
+# 
+from google.genai import types
 
 # 講座に固有の質問。正しい答えは data/glossary.json の homework-levels にある
 DEFAULT_QUESTION = "AIE2026の講座の宿題にある「3レベル」とは何ですか？"
@@ -26,7 +29,8 @@ DEFAULT_QUESTION = "AIE2026の講座の宿題にある「3レベル」とは何�
 # 質問の回答と、入力トークン数、出力トークン数を返す
 def ask(question: str) -> tuple[str, int | None, int | None]:
     client = genai.Client(api_key=get_api_key())
-    response = client.models.generate_content(model=MODEL, contents=question)
+    # response = client.models.generate_content(model=MODEL, contents=question)
+    response = client.models.generate_content(model=MODEL, contents=question, config=types.GenerateContentConfig(temperature=TEMPERATURE))
 
     input_tokens, output_tokens = get_token(response)
     return response.text, input_tokens, output_tokens
@@ -82,6 +86,7 @@ def main() -> None:
 						# 返答・過去の質問・token数表示
 						result_view(result, histories, input_tokens, output_tokens)
 						# 最新の質問に対する回答を更新
+						# 
 						histories.append((input_question, result))
 						# 履歴はmax_historiesで管理
 						if len(histories) > max_histories:
@@ -97,14 +102,16 @@ def main() -> None:
 def result_view(result:str, histories:list, input_tokens:int, output_tokens:int)->None:
 		print(f"[回答] {result}")
 		print(f"[トークン使用量] {input_tokens} (入力), {output_tokens} (出力)")
+		print("*"*50)
 		# 履歴
 		for i in range(len(histories)):
-				print("*" * 50)
+				print("-" * 256)
 				print(f"[質問の履歴] \n{histories[i][0]} \n\n {histories[i][1]}")
-				print("*" * 50)
+		print("*" * 50)
 # 応答時間表示(sec)：課題3
 def ask_time_view(start:float, end:float)->None:
 		t = end - start
 		print(f"\n[応答時間] : {t:.2f} sec.")
+
 if __name__ == "__main__":
 		main()

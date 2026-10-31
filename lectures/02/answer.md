@@ -40,11 +40,12 @@ CONFIGのパラメータについて、以下のように変更して調整を�
 #### 結果画像
 
 データ修正前  
-![データ修正前の結果](img/after_compare01.png)
+![データ修正前の結果](img/after_compare01.png)  
+> 学習後に学習前からの退行が見られた。
 
 データ修正後（result.json)  
 ![データ修正後（result.json）](img/leve2_result.png)
-
+> 学習後の退行も無くなり、正解率も向上しました。
 
 1. **変更データ（FAQ・GROUNDED・UNGROUNDED等の修正）**
     > **UNGROUNDED（根拠なしデータ）の作成方法**

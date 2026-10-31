@@ -38,6 +38,7 @@ CONFIGのパラメータについて、以下のように変更して調整を�
 - 結果（比較表や数字）：
 **結果**
 ![result.json](img/leve2_result.png)
+
 **作成したFAQ**
 **FAQ(抜粋)**
 ```python

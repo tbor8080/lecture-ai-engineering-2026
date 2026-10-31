@@ -37,14 +37,16 @@ CONFIGのパラメータについて、以下のように変更して調整を�
 - 変えた設定やデータ：FAQ/GROUNED/UNGROUNDEDなどデータをゴミ出しルールについてに変更（SYSTEMプロンプトも変更）しました。
 - 結果（比較表や数字）：学習設定は共通設定とし、FAQなどのデータの修正によって、内容正解率が向上しました。  
 
-#### 結果画像
+#### 結果画像　　
+**最終結果**  
+![最終結果](img/leve2_result.png)
 
-データ修正前  
-![データ修正前の結果](img/after_compare01.png)  
+**データ修正前**  
+![データ修正前の学習結果](img/after_compare01.png)  
 > 学習後に学習前からの退行が見られた。
 
-データ修正後（result.json)  
-![データ修正後（result.json）](img/leve2_result.png)
+**データ修正後（result.json)**  
+![データ修正後の学習結果](img/after_compare02-1.png)
 > 学習後の退行も無くなり、正解率も向上しました。
 
 1. **変更データ（FAQ・GROUNDED・UNGROUNDED等の修正）**

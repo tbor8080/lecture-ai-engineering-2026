@@ -46,13 +46,27 @@ $ uv run python -m app.agent --trace "LoRAとQLoRAの違いは？"
 ```  
 - 1つの質問での LLM 呼び出し回数（`requests`）：2
 - 追加したツールと、docstring に書いた説明：
+[追加したツール]: make_quiz  
+[docstring]: 以下のとおりです。
+```
+	"""ユーザーに「第２回の確認問題を出して」と頼まれた時に、指定された回の確認問題を用語集(glossary.json)内から出題する。
+    
+    call: make_quiz(2)
+    return: {"question": "「PEFT」の意味は？", "answer": "モデルの全パラメータではなく、…"}
+    """
+```
 
 ## 宿題
 
 - 取り組んだレベル：基礎
-- やったこと：
-- 結果：
-- 気づき・疑問：
+- やったこと：makequizを作成、docstring/INTRUCTIONSの指示を変更することで、agentの動作にどのような影響があるかを確認しました。
+- 結果：INTRUCTIONSに確認問題と4つの選択肢の作成を指示したところ、agentは指示に従い、確認問題と選択肢まで用意してくれました。
+  
+| 変更前 | 変更後 |
+| :---: | :---: |
+| ![変更前](./img/level01/result-0.png) | ![変更後](img/level01/result-1.png) |
+
+- 気づき・疑問：関数でのdocstringの指定よりもagent.pyのINTRUCTIONSで指定する方がagentは指示通りに動作すると感じました。タスクの中で優先度が高く、判断の要求される場面においては、docstring/INTRUCTIONSで強い指示にすることで、agentを従わせる必要がでるのかと感じました。
 ---
 - 取り組んだレベル：実装
 - やったこと：

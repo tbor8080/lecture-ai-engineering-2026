@@ -7,6 +7,8 @@
 import json
 from functools import cache
 from pathlib import Path
+# random.choice
+import random
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 MAX_RESULTS = 3
@@ -78,16 +80,21 @@ def get_lecture_summary(lecture: int) -> str:
         return f"第{lecture}回の要点はまだありません。用意されている回: {', '.join(available)}"
     return path.read_text(encoding="utf-8")
 
-def make_quiz(lecture: int)->str:
-    """いつ、何のために使うツールか
-    講義回を指定し、QUIZを出力します。
+def make_quiz(lecture: int) -> str:
+    """ユーザーに「第２回の確認問題を出して」と頼まれた時に、指定された回の確認問題を用語集(glossary.json)内から出題する。
+    
+    call: make_quiz(2)
+    return: {"question": "「PEFT」の意味は？", "answer": "モデルの全パラメータではなく、…"}
     """
-    glossary = load_glossary()
+    lectures = [lec for lec in load_glossary() if lec['lecture']==lecture]
+    l = random.choice(lectures) if lectures else load_glossary()[0]
     return json.dumps(
         {
-            "question": "",
-            "answer": ""
+            "question": l['term'],
+            "lecture": l['lecture'],
+            "answer": l['definition']
         },
         ensure_ascii=False,
     )
+
     

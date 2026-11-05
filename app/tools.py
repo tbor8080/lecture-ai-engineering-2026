@@ -97,4 +97,20 @@ def make_quiz(lecture: int) -> str:
         ensure_ascii=False,
     )
 
-    
+# 課題:実装
+from datetime import datetime
+import os
+def save_learning_log(lecture:int) -> str:
+    """学習の記録をlearning_logフォルダに保存します。
+    利用者の承認後、ログファイル(learning.json)の保存を行います。
+    """
+    path = Path("./lectures/03/learning_log")
+    if not os.path.isdir(path):
+        os.makedirs(path, exist_ok=True)
+        print(f"DIR: {path}を作成しました。")
+    file = os.path.join(path, "learning.json")
+    d = {"desc":"save_learning_logが実行されるかテストしてます。", "lecture":lecture, "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    with open(file, "w", encoding="utf-8") as fp:
+        json.dump(d, fp, ensure_ascii=False, indent=4)
+    # logs = json
+    return json.dumps(d, ensure_ascii=False)

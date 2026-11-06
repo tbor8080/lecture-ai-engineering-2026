@@ -104,13 +104,37 @@ def save_learning_log(lecture:int) -> str:
     """学習の記録をlearning_logフォルダに保存します。
     利用者の承認後、ログファイル(learning.json)の保存を行います。
     """
+    #################################################################
+    log_json = {"title": "学習記録", "dir":None, "file":None, "log":[]}
+    log_file = "learning.json"
     path = Path("./lectures/03/learning_log")
-    if not os.path.isdir(path):
-        os.makedirs(path, exist_ok=True)
-        print(f"DIR: {path}を作成しました。")
-    file = os.path.join(path, "learning.json")
-    d = {"desc":"save_learning_logが実行されるかテストしてます。", "lecture":lecture, "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    file = path / log_file
+    log_json["dir"] = str(path)
+    log_json["file"] = str(file)
+    lectures = [lec for lec in load_glossary() if lec['lecture']==lecture]
+    l = random.choice(lectures) if lectures else load_glossary()[0]
+
+    if not path.is_dir():
+        print(f"DIR: {path} Create.")
+    path.mkdir(parents=True, exist_ok=True)
+        
+    # 更新用 dict
+    update_json = {
+        "lecture": lecture, 
+        "term": l['term'],
+        "definition": l['definition'],
+        "date":datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    # fileが存在している場合。
+    if file.is_file():
+        with open(file, "r", encoding="utf-8") as fp:
+            log_json["log"] = json.load(fp)["log"]
+
+    # update log.
+    log_json["log"].append(update_json)
+
     with open(file, "w", encoding="utf-8") as fp:
-        json.dump(d, fp, ensure_ascii=False, indent=4)
-    # logs = json
-    return json.dumps(d, ensure_ascii=False)
+        json.dump(log_json, fp, ensure_ascii=False, indent=4)
+    # log json
+    return json.dumps(log_json, ensure_ascii=False)

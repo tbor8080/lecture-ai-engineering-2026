@@ -35,8 +35,8 @@ INSTRUCTIONS = """\
 - 用語集に見つからないことは、推測で断定せず「用語集にはない」と伝える。
 - 回答の最後に、関係する回（第N回）を示す。
 - 宿題の答えそのものは書かず、考え方のヒントで導く。
-- 利用者から指定された回の確認問題を出してほしいと頼まれたら、make_quizを使い、用語集からランダムに問題を出題し、選択肢を4つ作成してください。
-- 必ず、学習ログを保存します。save_learning_logを使い、learning_logフォルダに保存してください。
+- 最初に、make_quizを使い、問題を用語集からランダムに出題し、選択肢を4つ作成してください。（※この最初のターンでは save_learning_log は絶対に呼び出さないこと）
+- 学習ログの保存（save_learning_log）は、次の指示や別のターンで実行されるため、最初のターンでは実行しないでください。
 """
 
 # モデルは実行時に渡す（テストではAPIを呼ばない TestModel に差し替えるため）
@@ -117,35 +117,41 @@ def print_trace(result) -> None:
     print(f"[usage] {result.usage}")
 
 # 実装: 承認待ち->実行
-def print_approvals(result, target, args):
+def print_approvals(result, target):
     if isinstance(result.output, DeferredToolRequests):
         approvals_dict = {}
         
         # approvals の中身（ツール呼び出し）ごとに利用者に確認を取る
         for call in result.output.approvals:
-            print("\n--- 【承認待ちのツールリクエスト】 ---")
-            print(f"ツール名: {call.tool_name}")
-            print(f"引数: {call.args}")
+            print("\n--- 【承認ステップのリクエスト】 ---")
+            print(f"[tool approvals]: {call.tool_name}({call.args})")
+            print(f"[return]: {result.output.approvals}")
             
-            # 利用者に保存してよいか聞く
+            # 利用者承認ステップ
             answer = input("この操作を実行して学習ログファイルを保存しますか？ (y/n): ").strip().lower()
             is_approved = (answer == 'y')
+            if is_approved:
+                print('--- OK. ---')
+            else:
+                print('--- NG. ---')
             
             # ツールコールIDに紐づけて承認・拒否の結果を格納
             approvals_dict[call.tool_call_id] = is_approved
 
         # 承認結果オブジェクト（DeferredToolResults）を作成
         tool_results = DeferredToolResults(approvals=approvals_dict)
+        print(f"[deferred_tool_results]: {tool_results}")
         
         # message_history=result.all_messages() を渡して再実行
-        final_result = target.run_sync(
-            f"[承認後：継続]{args.question}",
+        approved_result = target.run_sync(
+            f"save_learning_logを実行します。",
             deferred_tool_results=tool_results,
             message_history=result.all_messages(), 
             model=build_model()
         )
-        print("\n--- 処理完了 ---")
-        print(final_result.output)
+        print(f"[approved result]: {approved_result}")
+        print(approved_result.output)
+        print("\n--- 承認ステップ完了 ---")
     else:
         print(result.output)
 
@@ -168,15 +174,19 @@ def main() -> None:
     if args.mcp:
         print("[tools] MCP サーバー（app/mcp_servers.json）")
     try:
-        result = target.run_sync(args.question, model=build_model())
+        result = target.run_sync(f"{args.question}(make_quizのみ。)", model=build_model())
+        print(result.output)
+
         # 実装:承認待ちフェーズ
         print("-- 承認待ちフェーズ --")
-        print_approvals(result, target, args)
+        approvals_result = target.run_sync(f"クイズの出題が終わりました、save_learning_logツールを実行してください。", message_history=result.all_messages(), model=build_model())
+        print_approvals(approvals_result, target)
+
     except ModelHTTPError as e:
         print(api_error_message(e.status_code, str(e.body)[:200]))
         raise SystemExit(1)
     
-    print(result.output)
+    
     if args.trace:
         print_trace(result)
 

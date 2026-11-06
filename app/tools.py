@@ -137,6 +137,6 @@ def save_learning_log(lecture:int) -> str:
     with open(file, "w", encoding="utf-8") as fp:
         json.dump(log_json, fp, ensure_ascii=False, indent=4)
     print(f"[save]: {file}を保存しました。")
-    print(f"[json]: {log_json["log"][:75]}...")
+    print(f"[latest json]: {log_json["log"][-1]}")
     # log json
     return json.dumps(log_json, ensure_ascii=False)

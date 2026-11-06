@@ -36,7 +36,7 @@ INSTRUCTIONS = """\
 - 回答の最後に、関係する回（第N回）を示す。
 - 宿題の答えそのものは書かず、考え方のヒントで導く。
 - 利用者から指定された回の確認問題を出してほしいと頼まれたら、make_quizを使い、用語集からランダムに問題を出題し、選択肢を4つ作成してください。
-- 利用者からログを保存してと言われたら、利用者の承認後にsave_learning_logを使い、学習記録として、learning_logフォルダに保存してください。
+- 必ず、学習ログを保存します。save_learning_logを使い、learning_logフォルダに保存してください。
 """
 
 # モデルは実行時に渡す（テストではAPIを呼ばない TestModel に差し替えるため）
@@ -46,12 +46,11 @@ agent = Agent(instructions=INSTRUCTIONS,
             output_type=[str, DeferredToolRequests])
 agent.tool_plain(tools.search_glossary)
 agent.tool_plain(tools.get_lecture_summary)
+# TODO(第3回 演習): tools.py に make_quiz を作り、ここで登録しよう
 # 追加
 agent.tool_plain(tools.make_quiz)
 # 課題: 実装
 agent.tool_plain(tools.save_learning_log, requires_approval=True)
-
-# TODO(第3回 演習): tools.py に make_quiz を作り、ここで登録しよう
 
 # 第5回: 使う MCP サーバーの設定ファイル。Claude Desktop や Cursor と同じ "mcpServers" 形式
 MCP_CONFIG = Path(__file__).resolve().parent / "mcp_servers.json"
@@ -140,7 +139,7 @@ def print_approvals(result, target, args):
         
         # message_history=result.all_messages() を渡して再実行
         final_result = target.run_sync(
-            f"[承認後：継続]{args.question}",  # または継続用のテキスト
+            f"[承認後：継続]{args.question}",
             deferred_tool_results=tool_results,
             message_history=result.all_messages(), 
             model=build_model()
@@ -171,10 +170,12 @@ def main() -> None:
     try:
         result = target.run_sync(args.question, model=build_model())
         # 実装:承認待ちフェーズ
+        print("-- 承認待ちフェーズ --")
         print_approvals(result, target, args)
     except ModelHTTPError as e:
         print(api_error_message(e.status_code, str(e.body)[:200]))
         raise SystemExit(1)
+    
     print(result.output)
     if args.trace:
         print_trace(result)

@@ -81,7 +81,7 @@ def get_lecture_summary(lecture: int) -> str:
     return path.read_text(encoding="utf-8")
 
 def make_quiz(lecture: int) -> str:
-    """ユーザーに「第２回の確認問題を出して」と頼まれた時に、指定された回の確認問題を用語集(glossary.json)内から出題する。
+    """ユーザーに「問題を出して」と頼まれた時に、指定された回の確認問題を用語集(glossary.json)内から出題する。
     
     call: make_quiz(2)
     return: {"question": "「PEFT」の意味は？", "answer": "モデルの全パラメータではなく、…"}

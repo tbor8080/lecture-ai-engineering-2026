@@ -7,6 +7,8 @@
 import json
 from functools import cache
 from pathlib import Path
+# random.choice
+import random
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 MAX_RESULTS = 3
@@ -77,3 +79,64 @@ def get_lecture_summary(lecture: int) -> str:
         available = sorted(p.stem for p in (DATA_DIR / "lectures").glob("*.md"))
         return f"第{lecture}回の要点はまだありません。用意されている回: {', '.join(available)}"
     return path.read_text(encoding="utf-8")
+
+def make_quiz(lecture: int) -> str:
+    """ユーザーに「問題を出して」と頼まれた時に、指定された回の確認問題を用語集(glossary.json)内から出題する。
+    
+    call: make_quiz(2)
+    return: {"question": "「PEFT」の意味は？", "answer": "モデルの全パラメータではなく、…"}
+    """
+    lectures = [lec for lec in load_glossary() if lec['lecture']==lecture]
+    l = random.choice(lectures) if lectures else load_glossary()[0]
+    return json.dumps(
+        {
+            "question": l['term'],
+            "lecture": l['lecture'],
+            "answer": l['definition']
+        },
+        ensure_ascii=False,
+    )
+
+# 課題:実装
+from datetime import datetime
+import os
+def save_learning_log(lecture:int, question:str, choices:list[str]) -> str:
+    """学習の記録をlearning_logフォルダに保存します。
+    利用者の承認後、学習結果を受け取り、ログファイル(learning.json)の保存を行います。
+    """
+    #################################################################
+    log_json = {"title": "学習記録", "dir":None, "file":None, "log":[]}
+    log_file = "learning.json"
+    path = Path("./lectures/03/learning_log")
+    file = path / log_file
+    log_json["dir"] = str(path)
+    log_json["file"] = str(file)
+
+    if not path.is_dir():
+        print(f"DIR: {path} Create.")
+    path.mkdir(parents=True, exist_ok=True)
+        
+    # 更新用 dict
+    update_json = {
+        "lecture": lecture, 
+        "question": question,
+        "choices": choices,
+        "date":datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    # fileが存在している場合。
+    if file.is_file():
+        with open(file, "r", encoding="utf-8") as fp:
+            log_json["log"] = json.load(fp)["log"]
+
+    # update log.
+    log_json["log"].append(update_json)
+    # 最新5件に絞る
+    log_json["log"] = log_json["log"][-5:]
+
+    with open(file, "w", encoding="utf-8") as fp:
+        json.dump(log_json, fp, ensure_ascii=False, indent=4)
+
+    print(f"\n[save]: {file}を保存しました。")
+    # log json
+    return json.dumps(log_json, ensure_ascii=False)

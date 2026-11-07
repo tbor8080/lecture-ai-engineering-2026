@@ -28,6 +28,17 @@ from pydantic_ai.providers.google import GoogleProvider
 from app import tools
 from app.config import MODEL, api_error_message, get_api_key
 
+# INSTRUCTIONS = """\
+# あなたはAIエンジニアリング講座（AIE2026）の学習支援エージェントです。
+# - 用語や講座に固有のことを答える前に、必ず search_glossary で用語集を確認する。
+# - 回の内容を聞かれたら get_lecture_summary を使う。
+# - 用語集に見つからないことは、推測で断定せず「用語集にはない」と伝える。
+# - 回答の最後に、関係する回（第N回）を示す。
+# - 宿題の答えそのものは書かず、考え方のヒントで導く。
+# - 最初に、make_quizを使い、問題を用語集からランダムに出題し、選択肢を4つ作成してください。（※最初のターンでは save_learning_log は絶対に呼び出さないこと）
+# - 学習ログの保存（save_learning_log）は、次の指示や別のターンで実行されるため、最初のターンでは実行しないでください。
+# """
+
 INSTRUCTIONS = """\
 あなたはAIエンジニアリング講座（AIE2026）の学習支援エージェントです。
 - 用語や講座に固有のことを答える前に、必ず search_glossary で用語集を確認する。
@@ -35,22 +46,30 @@ INSTRUCTIONS = """\
 - 用語集に見つからないことは、推測で断定せず「用語集にはない」と伝える。
 - 回答の最後に、関係する回（第N回）を示す。
 - 宿題の答えそのものは書かず、考え方のヒントで導く。
-- 最初に、make_quizを使い、問題を用語集からランダムに出題し、選択肢を4つ作成してください。（※最初のターンでは save_learning_log は絶対に呼び出さないこと）
-- 学習ログの保存（save_learning_log）は、次の指示や別のターンで実行されるため、最初のターンでは実行しないでください。
+"""
+
+INSTRUCTION_QUIZ = f"""\
+{INSTRUCTIONS}
+- make_quizを使い、問題を用語集からランダムに出題し、選択肢を4つ作成してください。
+"""
+
+INSTRUCTION_APPROVAL = f"""\
+- ユーザーの学習結果を受け取り、内容を確認した上で save_learning_logにlearning_resultとして、内容を渡してください。
+- 学習ログの保存をするときは、絶対にユーザの承認を行ってからsave_learning_logを実行してください。
 """
 
 # モデルは実行時に渡す（テストではAPIを呼ばない TestModel に差し替えるため）
+agent = Agent(instructions=INSTRUCTION_QUIZ)
 # 承認待ちモデル
-# agent = Agent(instructions=INSTRUCTIONS)
-agent = Agent(instructions=INSTRUCTIONS,
+approval_agent = Agent(instructions=INSTRUCTION_APPROVAL,
             output_type=[str, DeferredToolRequests])
 agent.tool_plain(tools.search_glossary)
 agent.tool_plain(tools.get_lecture_summary)
 # TODO(第3回 演習): tools.py に make_quiz を作り、ここで登録しよう
 # 追加
 agent.tool_plain(tools.make_quiz)
-# 課題: 実装
-agent.tool_plain(tools.save_learning_log, requires_approval=True)
+# 課題2: 実装/承認
+approval_agent.tool_plain(tools.save_learning_log, requires_approval=True)
 
 # 第5回: 使う MCP サーバーの設定ファイル。Claude Desktop や Cursor と同じ "mcpServers" 形式
 MCP_CONFIG = Path(__file__).resolve().parent / "mcp_servers.json"
@@ -117,54 +136,43 @@ def print_trace(result) -> None:
     print(f"[usage] {result.usage}")
 
 # 実装: 承認待ち->実行
-def run_approvals(result, target, args):
-    print("-- 実装: 承認プロセス --")
-    approvals_result = target.run_sync(
-        f"クイズの出題が終わりました、save_learning_logツールを実行してください。", 
-        message_history=result.all_messages(), 
+
+def print_approvals(target, _result, args):
+    result = target.run_sync(
+        "クイズの出題が終わりました、save_learning_logツールを実行してください。", 
+        message_history=_result.all_messages(), 
         model=build_model()
     )
-    print_approvals(approvals_result, target, args)
-
-def print_approvals(result, target, args):
+    print("-- 実装: 承認ステップ --")
     if isinstance(result.output, DeferredToolRequests):
         approvals_dict = {}
         
-        # approvals の中身（ツール呼び出し）ごとに利用者に確認を取る
+        # 利用者に確認を取る
         for call in result.output.approvals:
             print("\n--- 【承認ステップのリクエスト】 ---")
-            print(f"[tool approvals]: {call.tool_name}({call.args})")
-            print(f"[return]: {result.output.approvals}")
-            
+            print(f"\n[tool approvals]: {call.tool_name}({call.args})")
+            print(f"\n[return]: {result.output.approvals}")
+            print("\n--- 【承認ステップのリクエスト】 ---")
             # 利用者承認ステップ
-            answer = input("この操作を実行して学習ログファイルを保存しますか？ (y/n): ").strip().lower()
+            answer = input("---\nこの操作を実行して学習ログファイルを保存しますか？ (y/n): ").strip().lower()
             is_approved = (answer == 'y')
             if is_approved:
-                print('--- OK. ---')
+                print('--- 承認しました. ---')
             else:
-                print('--- NG. ---')
+                print('--- 拒否しました. ---')
             
-            # ツールコールIDに紐づけて承認・拒否の結果を格納
+            # 承認・拒否の結果を格納
             approvals_dict[call.tool_call_id] = is_approved
 
-        # 承認結果オブジェクト（DeferredToolResults）を作成
+        # 承認結果: DeferredToolResultsを作成
         tool_results = DeferredToolResults(approvals=approvals_dict)
-        if args.trace:
-            print(f"[deferred_tool_results]: {tool_results}")
         
-        # message_history=result.all_messages() を渡して再実行
-        approved_result = target.run_sync(
-            f"save_learning_logを実行します。",
-            deferred_tool_results=tool_results,
-            message_history=result.all_messages(), 
-            model=build_model()
-        )
         if args.trace:
-            print(f"[approved result]: {approved_result}")
-            print(approved_result.output)
+            print(f"\n[deferred_tool_results]: {tool_results}")
             print("\n--- 承認ステップ完了 ---")
     else:
         print(result.output)
+    return result
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="学習支援エージェントに質問する")
@@ -175,8 +183,13 @@ def main() -> None:
     args = parser.parse_args()
 
     target = build_mcp_agent() if args.mcp else agent
+    # 別エージェント追加: targetをベースに
+    approval_target = build_mcp_agent() if args.mcp else approval_agent
     if args.list_tools:
+        print(f"\nAgent 1: 承認なし")
         print_tools(target)
+        print(f"\nAgent 2: 承認あり")
+        print_tools(approval_target)
         return
     if not args.question:
         parser.error("質問を指定してください")
@@ -185,18 +198,11 @@ def main() -> None:
     if args.mcp:
         print("[tools] MCP サーバー（app/mcp_servers.json）")
     try:
-        result = target.run_sync(f"{args.question}(make_quizのみ実行してください。)", model=build_model())
+        # make_quizまで
+        result = target.run_sync(f"{args.question}", model=build_model())
         print(result.output)
-
-        # 実装:承認待ちフェーズ
-        # print("-- 実装: 承認プロセス --")
-        # approvals_result = target.run_sync(
-        #     f"クイズの出題が終わりました、save_learning_logツールを実行してください。", 
-        #     message_history=result.all_messages(), 
-        #     model=build_model()
-        # )
-        # print_approvals(approvals_result, target, args)
-        run_approvals(result, target, args)
+        # 承認Agent起動
+        approvals_result = print_approvals(approval_target, result, args)
 
     except ModelHTTPError as e:
         print(api_error_message(e.status_code, str(e.body)[:200]))
@@ -204,6 +210,7 @@ def main() -> None:
     
     if args.trace:
         print_trace(result)
+        print_trace(approvals_result)
 
 
 if __name__ == "__main__":

@@ -100,9 +100,9 @@ def make_quiz(lecture: int) -> str:
 # 課題:実装
 from datetime import datetime
 import os
-def save_learning_log(lecture:int) -> str:
+def save_learning_log(lecture:int, question:str, choices:list[str]) -> str:
     """学習の記録をlearning_logフォルダに保存します。
-    利用者の承認後、ログファイル(learning.json)の保存を行います。
+    利用者の承認後、学習結果を受け取り、ログファイル(learning.json)の保存を行います。
     """
     #################################################################
     log_json = {"title": "学習記録", "dir":None, "file":None, "log":[]}
@@ -111,8 +111,6 @@ def save_learning_log(lecture:int) -> str:
     file = path / log_file
     log_json["dir"] = str(path)
     log_json["file"] = str(file)
-    lectures = [lec for lec in load_glossary() if lec['lecture']==lecture]
-    l = random.choice(lectures) if lectures else load_glossary()[0]
 
     if not path.is_dir():
         print(f"DIR: {path} Create.")
@@ -121,8 +119,8 @@ def save_learning_log(lecture:int) -> str:
     # 更新用 dict
     update_json = {
         "lecture": lecture, 
-        "term": l['term'],
-        "definition": l['definition'],
+        "question": question,
+        "choices": choices,
         "date":datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
 
@@ -133,10 +131,12 @@ def save_learning_log(lecture:int) -> str:
 
     # update log.
     log_json["log"].append(update_json)
+    # 最新5件に絞る
+    log_json["log"] = log_json["log"][-5:]
 
     with open(file, "w", encoding="utf-8") as fp:
         json.dump(log_json, fp, ensure_ascii=False, indent=4)
-    print(f"[save]: {file}を保存しました。")
-    print(f"[latest json]: {log_json["log"][-1]}")
+
+    print(f"\n[save]: {file}を保存しました。")
     # log json
     return json.dumps(log_json, ensure_ascii=False)

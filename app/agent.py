@@ -175,9 +175,14 @@ def print_approvals(target, _result, args):
 
         # 承認結果: DeferredToolResultsを作成
         tool_results = DeferredToolResults(approvals=approvals_dict)
-        
+        tool_result = target.run_sync(
+            message_history=result.all_messages(),
+            deferred_tool_results=tool_results,
+            model=build_model()
+        )
         if args.trace:
-            print(f"\n[deferred_tool_results]: {tool_results}")
+            # print(f"\n[deferred_tool_results]: {tool_results}")
+            print_trace(tool_result)
             print("\n--- 承認ステップ完了 ---")
     else:
         print(result.output)

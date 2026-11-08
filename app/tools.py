@@ -82,6 +82,7 @@ def get_lecture_summary(lecture: int) -> str:
 
 def make_quiz(lecture: int) -> str:
     """ユーザーに「問題を出して」と頼まれた時に、指定された回の確認問題を用語集(glossary.json)内から出題する。
+
     
     call: make_quiz(2)
     return: {"question": "「PEFT」の意味は？", "answer": "モデルの全パラメータではなく、…"}
@@ -103,6 +104,10 @@ import os
 def save_learning_log(lecture:int, question:str, choices:list[str]) -> str:
     """学習の記録をlearning_logフォルダに保存します。
     利用者の承認後、学習結果を受け取り、ログファイル(learning.json)の保存を行います。
+    Args:
+        lecture: 出題した講義の回の番号。
+        question: 利用者に表示した問題文。用語名ではなく、出題した文をそのまま渡す。
+        choices: 利用者に表示した選択肢4つ。内容を要約・変更せず、表示した順にそのまま渡す。
     """
     #################################################################
     log_json = {"title": "学習記録", "dir":None, "file":None, "log":[]}

@@ -47,6 +47,8 @@ INSTRUCTIONS = """\
 - 回答の最後に、関係する回（第N回）を示す。
 - 宿題の答えそのものは書かず、考え方のヒントで導く。
 """
+# - 最初に、make_quizを使い、問題を用語集から出題し、選択肢を4つ作成してください。（※最初のターンでは save_learning_log は絶対に呼び出さないこと）
+# - 学習ログの保存（save_learning_log）は、次の指示や別のターンで実行されるため、最初のターンでは実行しないでください。
 
 INSTRUCTION_QUIZ = f"""\
 {INSTRUCTIONS}
@@ -59,15 +61,22 @@ INSTRUCTION_APPROVAL = f"""\
 """
 
 # モデルは実行時に渡す（テストではAPIを呼ばない TestModel に差し替えるため）
+# 課題1用
+# agent = Agent(instructions=INSTRUCTIONS)
+# 課題2用
 agent = Agent(instructions=INSTRUCTION_QUIZ)
+# agent = Agent(instructions=INSTRUCTIONS, output_type=[str, DeferredToolRequests])
 # 承認待ちモデル
 approval_agent = Agent(instructions=INSTRUCTION_APPROVAL,
             output_type=[str, DeferredToolRequests])
+# Tool
 agent.tool_plain(tools.search_glossary)
 agent.tool_plain(tools.get_lecture_summary)
 # TODO(第3回 演習): tools.py に make_quiz を作り、ここで登録しよう
 # 追加
 agent.tool_plain(tools.make_quiz)
+# 課題1用
+# agent.tool_plain(tools.save_learning_log, requires_approval=True)
 # 課題2: 実装/承認
 approval_agent.tool_plain(tools.save_learning_log, requires_approval=True)
 
@@ -139,7 +148,7 @@ def print_trace(result) -> None:
 
 def print_approvals(target, _result, args):
     result = target.run_sync(
-        "クイズの出題が終わりました、save_learning_logツールを実行してください。", 
+        "クイズの出題が終わりました、save_learning_logを実行してください。", 
         message_history=_result.all_messages(), 
         model=build_model()
     )
@@ -166,9 +175,14 @@ def print_approvals(target, _result, args):
 
         # 承認結果: DeferredToolResultsを作成
         tool_results = DeferredToolResults(approvals=approvals_dict)
-        
+        tool_result = target.run_sync(
+            message_history=result.all_messages(),
+            deferred_tool_results=tool_results,
+            model=build_model()
+        )
         if args.trace:
-            print(f"\n[deferred_tool_results]: {tool_results}")
+            # print(f"\n[deferred_tool_results]: {tool_results}")
+            print_trace(tool_result)
             print("\n--- 承認ステップ完了 ---")
     else:
         print(result.output)
@@ -203,6 +217,7 @@ def main() -> None:
         print(result.output)
         # 承認Agent起動
         approvals_result = print_approvals(approval_target, result, args)
+        # approvals_result = print_approvals(target, result, args)
 
     except ModelHTTPError as e:
         print(api_error_message(e.status_code, str(e.body)[:200]))
@@ -211,7 +226,6 @@ def main() -> None:
     if args.trace:
         print_trace(result)
         print_trace(approvals_result)
-
 
 if __name__ == "__main__":
     main()

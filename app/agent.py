@@ -184,6 +184,7 @@ def print_approvals(target, _result, args):
             # print(f"\n[deferred_tool_results]: {tool_results}")
             print_trace(tool_result)
             print("\n--- 承認ステップ完了 ---")
+        return tool_result
     else:
         print(result.output)
     return result

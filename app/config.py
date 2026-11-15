@@ -9,7 +9,14 @@ from pathlib import Path
 # 既定モデル。環境変数 AIE_MODEL を設定すると切り替えられる。
 #   例: export AIE_MODEL=gemini-3.5-flash
 DEFAULT_MODEL = "gemini-3.5-flash-lite"
+# DEFAULT_MODEL = "gemini-3.1-flash-lite"
 MODEL = os.getenv("AIE_MODEL", DEFAULT_MODEL)
+
+
+# モデルのランダム性: TEMPERATUREを追記。
+# 例: export AIE_TEMPERATURE=0.7
+DEFAULT_TEMPERATURE = 0.7
+TEMPERATURE = os.getenv("AIE_TEMPERATURE", DEFAULT_TEMPERATURE)
 
 # 第5回: 1ページを1チャンクとして検索する。索引はscripts/build_rag_index.pyで作成する。
 ROOT = Path(__file__).resolve().parent.parent
@@ -27,7 +34,6 @@ EMBEDDING_DIMENSIONS = 768
 # 2,048トークンの上限に対し、タスク指定等の分を残す。超過時は切り捨てず停止する。
 EMBEDDING_MAX_TOKENS = 2000
 
-
 def api_error_message(status: int, detail: str = "") -> str:
     """HTTPステータスコードを、受講生向けの日本語の説明にする（ask.py と agent.py で共用）。"""
     if status == 429:
@@ -37,7 +43,6 @@ def api_error_message(status: int, detail: str = "") -> str:
     if status in (400, 401, 403, 404):
         return f"APIキーかモデル名に問題があります（{status}）: {detail}"
     return f"APIエラー（{status}）: {detail}"
-
 
 def get_api_key() -> str:
     """環境変数 GEMINI_API_KEY を返す。未設定なら手順を表示して終了する。"""

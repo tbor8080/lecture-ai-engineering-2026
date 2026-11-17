@@ -29,6 +29,8 @@ EMBEDDING_DIMENSIONS = 768
 # 2,048トークンの上限に対し、タスク指定等の分を残す。超過時は切り捨てず停止する。
 EMBEDDING_MAX_TOKENS = 2000
 
+TEMPERATURE=0.7
+
 
 def api_error_message(status: int, detail: str = "") -> str:
     """HTTPステータスコードを、受講生向けの日本語の説明にする（ask.py と agent.py で共用）。"""

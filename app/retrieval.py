@@ -75,7 +75,6 @@ def browse_tree(node_id: str | None = None) -> dict:
         remaining.extend(node.get("children", []))
     raise ValueError("対象の目次ノードが見つかりません。")
 
-
 def read_page(page_id: str) -> dict:
     """第1〜3回の本講義から、指定した1ページの本文と引用情報を返す。"""
     for page in load_pages(RAG_SOURCE):
@@ -135,8 +134,22 @@ def search(query: str) -> list[dict]:
                    vec_distance_cosine(embedding, ?) AS distance
             FROM chunks ORDER BY distance, page_id LIMIT ?
         """, (sqlite_vec.serialize_float32(vector), RAG_TOP_K))
-        return [dict(row) for row in rows]
-
+        # return [dict(row) for row in rows]
+        # 実装: LLMに渡す情報を前後ページまで渡すかどうか
+        import time
+        timer = time.perf_counter()
+        results = [dict(row) for row in rows]
+        seen = get_seen_keys(results)
+        adjacent=[]
+        for result in results:
+            get_adjacent_context(result, seen)
+            if result.get("prev"):
+                adjacent.append(result.get("prev"))
+            if result.get("after"):
+                adjacent.append(result.get("after"))
+        # ログに記録
+        log_rag_run(caller_name(), RAG_PLUS_CONTEXT, len(results), len(adjacent), query.strip(), timer)
+        return results
 
 def search_graph(query: str) -> dict:
     """ベクトル検索を入口に、前後ページと共通用語で候補を広げる。"""
@@ -184,8 +197,6 @@ def search_graph(query: str) -> dict:
     return {"seeds": results, "expanded": expanded[:max(0, GRAPH_MAX_RESULTS - len(results))],
             "max_hops": GRAPH_HOPS}
 
-
-
 def run_full_context(agent, question: str, model, instructions: str, prompt_template: str):
     """全資料を一括投入し、検索ツールを使わずに回答する。"""
     prompt = prompt_template.format(materials=get_all_materials(), question=question)
@@ -197,15 +208,145 @@ def run_full_context(agent, question: str, model, instructions: str, prompt_temp
         print(f"[full-context] APIエラー HTTP {e.status_code}: {e.body}")
         raise SystemExit(1)
 
+# 実装: 単純に同じdoc_idと結果の前後ページを取得する
+def search_page(doc_id: str, page: tuple[int, int]) -> list[dict]:
+    pages = [p for p in page if p is not None and p >= 1]
+    if not pages:
+        return []
+    """結果から同じdoc_idと結果の前後ページを取得する"""
+    placeholders = ", ".join("?" for _ in pages)
+    sql=f"""
+        SELECT page_id, document_id, lecture, document_title, section, title, page, content
+        FROM chunks 
+        WHERE document_id = ? AND page IN ({placeholders})
+    """
+    with open_index(RAG_DB) as db:
+        rows = db.execute(sql, (doc_id, *pages))
+        return [dict(row) for row in rows]
+# 実装
+"""
+app/retrieval.pyで、検索結果に前後1ページの本⽂も付けるよう改良します。
+別の資料をまたがず、同じページが重複しないようにします。
+通常の検索と⽐べ、根拠が増えた例と、不要な情報が増えた例を確認します。
+
+LLMに渡されるのが、
+"""
+# RAG
+def retrieval_query():
+    parser = argparse.ArgumentParser(description="エージェントを使わず、講義資料の検索だけを実行する")
+    parser.add_argument("query", help="調べたい内容")
+    return parser.parse_args()
+
+def get_seen_keys(results) -> set[tuple[str, int]]:
+    return {(r["document_id"], r["page"]) for r in results}
+
+from datetime import datetime
+import time
+import inspect
+
+def caller_name() -> str:
+    frame = inspect.currentframe()
+    try:
+        # _caller_name -> search -> 実際の呼び出し元
+        caller = frame.f_back.f_back if frame and frame.f_back else None
+        if caller is None:
+            return "<unknown>"
+        return f"{caller.f_code.co_name}:{caller.f_lineno}"
+    finally:
+        del frame
+
+def log_rag_run(
+    hook="search", 
+    rag_plus_context=False, 
+    result_count=0,
+    adjacent_count=0,
+    query="",
+    timer=0
+):
+    """コンテキストログ保存"""
+    
+    LOG_PATH = Path(__file__).resolve().parent.parent / "lectures/05/logs/retrieval.jsonl"
+    record = {
+        "hook": hook,
+        "rag_plus_context": rag_plus_context,
+        "result_count": result_count,
+        "adjacent_count": adjacent_count,
+        "query": query,
+        "time_ms": (time.perf_counter() - timer)*1000,
+        "timestamp": datetime.now().strftime("%y-%m-%d %H:%M:%S"),
+    }
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with LOG_PATH.open("a", encoding="utf-8") as fp:
+        fp.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+def is_rag_plus_context_enabled() -> bool:
+    """UV_ENV_FILE=.env RAG_PLUS_CONTEXT=1 uv run python -m app.retrieval 'コンパクションを使う場面は？'"""
+    import os
+    plus_context = os.getenv("RAG_PLUS_CONTEXT")
+    return plus_context is not None and plus_context.strip() != ""
+
+RAG_PLUS_CONTEXT=is_rag_plus_context_enabled()
+
+def get_adjacent_context(result: dict, seen: set[tuple[str, int]] | None = None)->list[dict]:
+    """隣接するコンテキストに拡張"""
+    if not RAG_PLUS_CONTEXT:
+        return []
+    contexts = search_page(result['document_id'], (result['page']-1, result['page']+1))
+    if not contexts:
+        return []
+    prev, after = None, None
+    adjacent: list[dict] = []
+    for row in contexts:
+        key = (row["document_id"], row["page"])
+        if seen is not None and key in seen:
+            continue
+        if row['page'] < result['page']:
+            prev = row
+        elif row['page'] > result['page']:
+            after = row
+    result['prev'] = prev
+    result['after'] = after
+    return result
+
+def print_adjacent_context(result, seen):
+    prev = result.get("prev")
+    after = result.get("after")
+    if prev is not None:
+        if seen is not None:
+            seen.add((prev["document_id"], prev["page"]))
+        print(f"前へ(P. {prev['page']}): {prev['title']}[{prev['document_title']}:{prev['section']}]")
+        print(f"\n{prev['content']}")
+    if after is not None:
+        if seen is not None:
+            seen.add((after["document_id"], after["page"]))
+        # print("\n", "*"*32, "\n")
+        print(f"次へ(P. {after['page']}): {after['title']}[{after['document_title']}:{after['section']}]", )
+        print(f"\n{after['content']}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="エージェントを使わず、講義資料の検索だけを実行する")
     parser.add_argument("query", help="調べたい内容")
     args = parser.parse_args()
-    for i, result in enumerate(search(args.query), 1):
+    # 実装
+    timer = time.perf_counter()
+    results = list(search(args.query))
+    # 重複ページを防ぐためのFlag
+    seen = get_seen_keys(results)
+    adjacent=[]
+    for i, result in enumerate(results, 1):
+        
         print(f"\n{'=' * 60}\n検索結果 {i}\n{'=' * 60}")
         print(f"講義: {result['document_title']}")
         print(f"章: {result['section']}")
         print(f"タイトル: {result['title']}")
         print(f"ページ: {result['page']}")
         print(f"\n{result['content']}")
+        # 追記
+        print_adjacent_context(result, seen)
+    
+        if result.get("prev"):
+            adjacent.append(result.get("prev"))
+        if result.get("after"):
+            adjacent.append(result.get("after"))
+        
+    log_rag_run("main", RAG_PLUS_CONTEXT, len(results), len(adjacent), args.query, timer)

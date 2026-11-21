@@ -1,0 +1,12 @@
+{"hook": "test_built_index_can_be_searched:39", "rag_plus_context": false, "result_count": 2, "adjacent_count": 0, "query": "質問", "time_ms": 0.15765400007694552, "timestamp": "26-11-21 08:17:55"}
+{"hook": "test_built_index_can_be_searched:39", "rag_plus_context": false, "result_count": 2, "adjacent_count": 0, "query": "質問", "time_ms": 0.1784829998996429, "timestamp": "26-11-21 08:22:34"}
+{"hook": "<module>:332", "rag_plus_context": true, "result_count": 10, "adjacent_count": 16, "query": "Copilotとは何ですか？", "time_ms": 6.888937999974587, "timestamp": "26-11-21 08:24:32"}
+{"hook": "main", "rag_plus_context": true, "result_count": 10, "adjacent_count": 16, "query": "Copilotとは何ですか？", "time_ms": 859.8414019998017, "timestamp": "26-11-21 08:24:32"}
+{"hook": "<module>:332", "rag_plus_context": true, "result_count": 10, "adjacent_count": 18, "query": "コンパクションを使う場面は？", "time_ms": 7.133022999823879, "timestamp": "26-11-21 08:25:45"}
+{"hook": "main", "rag_plus_context": true, "result_count": 10, "adjacent_count": 18, "query": "コンパクションを使う場面は？", "time_ms": 535.9411659999296, "timestamp": "26-11-21 08:25:45"}
+{"hook": "<module>:332", "rag_plus_context": true, "result_count": 5, "adjacent_count": 8, "query": "コンパクションを使う場面は？", "time_ms": 5.891195999993215, "timestamp": "26-11-21 08:26:20"}
+{"hook": "main", "rag_plus_context": true, "result_count": 5, "adjacent_count": 8, "query": "コンパクションを使う場面は？", "time_ms": 518.3096299999761, "timestamp": "26-11-21 08:26:20"}
+{"hook": "<module>:332", "rag_plus_context": true, "result_count": 5, "adjacent_count": 10, "query": "Copilotとは何ですか？", "time_ms": 3.865358999973978, "timestamp": "26-11-21 08:26:34"}
+{"hook": "main", "rag_plus_context": true, "result_count": 5, "adjacent_count": 10, "query": "Copilotとは何ですか？", "time_ms": 528.5619899998437, "timestamp": "26-11-21 08:26:34"}
+{"hook": "<module>:332", "rag_plus_context": false, "result_count": 5, "adjacent_count": 0, "query": "Copilotとは何ですか？", "time_ms": 0.1768699999047385, "timestamp": "26-11-21 08:27:37"}
+{"hook": "main", "rag_plus_context": false, "result_count": 5, "adjacent_count": 0, "query": "Copilotとは何ですか？", "time_ms": 520.5641730001389, "timestamp": "26-11-21 08:27:37"}

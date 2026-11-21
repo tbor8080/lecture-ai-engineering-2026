@@ -40,7 +40,7 @@ run_agent_with_retry() {
 		if [ "${PATTERN}" = "plus_context" ]; then
 			RAG_PLUS_CONTEXT=1 uv run python -m app.agent "${QUERY}" --trace 2>&1 | tee "$tmp_out"
 		else
-			run python -m app.agent "${QUERY}" --trace 2>&1 | tee "$tmp_out"
+			uv run python -m app.agent "${QUERY}" --trace 2>&1 | tee "$tmp_out"
 		fi
 	
 		exit_code=${PIPESTATUS[0]}

@@ -1,0 +1,14 @@
+[server] glossary: コマンドで起動（uv run python -m app.mcp_server）
+[server] fetch: コマンドで起動（uvx mcp-server-fetch==2026.11.11 --no-readability-js）
+[model] gemini-3.5-flash-lite
+[tools] MCP サーバー（app/mcp_servers.json）
+Model Context Protocol（MCP）は、AIアプリケーションと外部のデータソース、ツール、ワークフローを接続するためのオープンソースの標準規格です。
+AIにとっての「USB-Cポート」のような役割を果たし、様々な外部システムへの接続を標準化します。
+これにより、開発者は複雑な連携を簡素化でき、AIエージェントの機能やユーザーの利便性を大きく向上させることが可能です。
+
+--- trace ---
+[tool call]   fetch_fetch({'url': 'https://modelcontextprotocol.io/'})
+[tool return] fetch_fetch -> Contents of https://modelcontextprotocol.io/:
+> ## Documentation Index
+> Fetch the complete documentation index at: http…
+[usage] 入力 2,181 tokens / 出力 110 tokens / モデル応答 2 回

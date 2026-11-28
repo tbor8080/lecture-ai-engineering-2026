@@ -10,3 +10,5 @@
 {"hook": "main", "rag_plus_context": true, "result_count": 5, "adjacent_count": 10, "query": "Copilotとは何ですか？", "time_ms": 528.5619899998437, "timestamp": "26-11-21 08:26:34"}
 {"hook": "<module>:332", "rag_plus_context": false, "result_count": 5, "adjacent_count": 0, "query": "Copilotとは何ですか？", "time_ms": 0.1768699999047385, "timestamp": "26-11-21 08:27:37"}
 {"hook": "main", "rag_plus_context": false, "result_count": 5, "adjacent_count": 0, "query": "Copilotとは何ですか？", "time_ms": 520.5641730001389, "timestamp": "26-11-21 08:27:37"}
+{"hook": "test_built_index_can_be_searched:39", "rag_plus_context": false, "result_count": 2, "adjacent_count": 0, "query": "質問", "time_ms": 0.22167400038597407, "timestamp": "26-11-23 13:48:24"}
+{"hook": "test_built_index_can_be_searched:39", "rag_plus_context": false, "result_count": 2, "adjacent_count": 0, "query": "質問", "time_ms": 0.16769200010458007, "timestamp": "26-11-26 14:01:54"}

@@ -76,3 +76,4 @@
 - 片付けの状況：済 / 後で行う（予定の時期：　　）
 - `terraform destroy` の最後の行：
 - state 用のバケットの削除（`delete-state-bucket.sh` の最後の行。バケット名に含まれるアカウント ID は伏せます）：
+

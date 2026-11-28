@@ -21,7 +21,7 @@
 - 結果：
 	1. ツールが`mcp_server.py`に追加されたことを確認しました。
 	2. `--list-tools`で8つに増えたことを確認しました。（演習時点では,7つでした。）
-	3. `app.mcp_agent --trace "質問内容"`において、get_lecture_summaryが、traceに示されたのを確認しました。
+	3. `app.mcp_agent --trace "質問内容"`において、`get_lecture_summary`が、traceに示されたのを確認しました。
 	4. 最後に、`pytest`を実行し、テストが全て通るのを確認しました。
 
 	#### 実行結果: `app.mcp_agent --list-tools`
@@ -57,8 +57,8 @@
 - 取り組んだレベル：実装
 - やったこと：
 	- 以前に実装した`app/quiz.py`から`make_quiz`を`mcp_server.py`に追加しました。
-	- 質問：第99回のクイズを作って
-	- ファイル分割: `app/tools.py`から`app/quiz.py`に分割
+	- ファイル分割: `app/tools.py`から`app/quiz.py`に分割しました。
+	- 分割によるモジュールの影響はありませんでした。
 - 結果：
 	1. `mcp_agent`にツールとして登録されました。
 	2. 「第99回のクイズを作って」と実行すると`glossary_make_quiz({'lecture': 99})`が呼ばれ、範囲外の場合は`{"error": "第99回は存在しません。"}`が返り、存在しない回であることを伝えられるようになった。
@@ -87,17 +87,20 @@
 - やったこと：VS CodeのMCP設定について調べ、`app/mcp_servers.json`と比較した。
 - 参照日付: 2026年11月26日
 	- [Add and use MCP servers in VS Code](https://code.visualstudio.com/docs/agent-customization/mcp-servers)
+	- [MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration)（`mcpServers`、設定ファイル、`stdio`/HTTP のスキーマ）
+	- [Manage and troubleshoot MCP servers](https://code.visualstudio.com/docs/agents/run/manage-mcp-servers)（設定の編集、起動・停止、共有とトラブル対応）
+	
 - 結果：
 	- 設定方法と置き場所
 		1. コマンドパレット（`MCP: Add Server`）から `stdio`（例：`uv run python -m app.mcp_server`）や `URL`（例：`http://localhost:8888/mcp`）を選択して追加できる
-		2. 設定ファイルとして、グローバル設定やプロジェクトルートの `.mcp.json` を直接編集することもできる
+		2. 設定ファイルとして、グローバル設定（`~/.copilot/mcp-config.json`）やプロジェクトルートの `.mcp.json`（または`.vscode/mcp.json`）を直接編集することもできる
 	- 起動・接続の例
 		- コマンド（stdio）：`uvx`、`npx`など
 		- URL：`https://learn.microsoft.com/api/mcp`(ローカルサーバも可能)など
 	- 有効になる範囲
-		1. グローバル（全体）
-		2. リモート（開発コンテナ）
-		3. ワークスペース（特定プロジェクト）
+		1. グローバル（ユーザーの複数ワークスペース）
+		2. リモート（開発コンテナやリモート接続先の設定・実行環境）
+		3. ワークスペース（ローカル・開発コンテナどちらのワークスペースでも可能）
 
 - 気づき・疑問：
 	- `app/mcp_servers.json`はアプリ側でサーバーを指定する(`stdio`)のに対し、VS Codeではグローバル・コンテナ・ワークスペース環境のどこに適用するかを選んで設定できる点が便利だと感じた。

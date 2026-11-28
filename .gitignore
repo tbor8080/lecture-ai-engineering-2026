@@ -15,3 +15,7 @@ learning_log/
 
 # 第5回: 資料から再生成する検索DB
 .cache/rag/
+
+# 第6回: MCPサーバー追加後の各コマンドのログ/宿題のログ
+lectures/06/exercises
+lectures/06/homework
